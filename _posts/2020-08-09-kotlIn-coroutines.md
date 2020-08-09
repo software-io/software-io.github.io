@@ -7,6 +7,8 @@ date: 2020-08-09
 This articles outlines the main concepts related to coroutines which are lightweight threads and how they compare to actual Threads.
 You will see how coroutines simplifies non-blocking asynchronous code with callbacks and synchronization.
 
+##Scope
+
 To create a coroutine you can use one of its builders, in this case launch which creates a CoroutineScope.
 Using GlobalScope means the coroutine last for the lifecycle of the application. launch is comparable to thread { } and delay is special non-blocking suspending function which acts like Thread.sleep in a coroutine.
 
@@ -63,6 +65,38 @@ Output
 2. launch complete
 4. coroutineScope complete
 5. runBlocking complete
+```
+
+##Context
+
+A context is a set of data that relates to the coroutine. All coroutines have an associated context
+ - Dispatcher 	- which thread the coroutine is run on
+ - Job 			- handle on the coroutine lifecycle
+
+```kotlin
+fun main() {
+    runBlocking {
+        launch(CoroutineName("ACoroutine")) { // context of the parent, main runBlocking coroutine
+            println("main runBlocking      : in coroutine ${coroutineContext.get(CoroutineName.Key)}    : I'm working in thread ${Thread.currentThread().name}")
+        }
+        launch(Dispatchers.Unconfined) { // not confined -- will work with main thread
+            println("Unconfined            : I'm working in thread ${Thread.currentThread().name}")
+        }
+        launch(Dispatchers.Default) { // will get dispatched to DefaultDispatcher 
+            println("Default               : I'm working in thread ${Thread.currentThread().name}")
+        }
+        launch(newSingleThreadContext("MyOwnThread")) { // will get its own new thread
+            println("newSingleThreadContext: I'm working in thread ${Thread.currentThread().name}")
+        }
+    }
+}
+```
+Ouput
+```kotlin
+Unconfined            : I'm working in thread main @coroutine#3
+Default               : I'm working in thread DefaultDispatcher-worker-1 @coroutine#4
+main runBlocking      : in coroutine ACoroutine     : I'm working in thread main @coroutine#2
+newSingleThreadContext: I'm working in thread MyOwnThread @coroutine#5
 ```
 
 References
